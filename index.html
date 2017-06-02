@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Control Game</title>
+    <style>
+    	canvas {
+        background: #5bc0de;
+        display: block;
+        margin: auto;
+        margin-top: 40px;}
+      .center {
+        margin: auto;
+        width: 450px;
+        border: 2px solid #5bc0de;
+        text-align: center;
+      }
+    </style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="800" height="200"></canvas>
+<br><br>
+<div class="center">
+  <table style="margin: auto; padding:5px; border-spacing: 20px 2px;">
+    <tr><td><strong>J/K</strong></td><td>bang-bang jerk control</td></tr>
+    <tr><td><strong>A/S</strong></td><td>bang-bang acceleration control</td></tr>
+    <tr><td><strong>V/B</strong></td><td>bang-bang velocity control</td></tr>
+</table>
+</div><br>
+<div style="text-align:center;"><a href="optimal.html">Click here</a> to see what the time-optimal control looks like.</div>
+
+<script>
+
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+
+// var imageObj = new Image();
+//
+// imageObj.onload = function() {
+//   ctx.drawImage(imageObj, 100, 0);
+// };
+// imageObj.src = 'background.jpg';
+
+var frameRate = 1/60; // s
+var frameDelay = frameRate * 1000; // ms
+
+var contourWidth = 2;
+
+var squareSize = 30; //cm
+var squareMass = 5; //kg
+
+// initial conditions
+var x0 = canvas.width/2-squareSize/2;
+var y0 = canvas.height-squareSize-contourWidth+1;
+
+var vx0 = 0;
+var ax0 = 0;
+
+var x = x0;
+var y = y0;
+var vx = vx0;
+var ax = ax0;
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// objective
+var xGoal = getRandomInt(52,702);
+var yGoal = y0-12;
+
+var restitution = 0;
+
+var dAX = 5; // cm/sˆ2
+var dVX = 5; // cm/s
+var dX = 5; // cm
+
+var rightPressed = false;
+var leftPressed = false;
+var spacePressed = false;
+var vPressed = false;
+var bPressed = false;
+var jPressed = false;
+var kPressed = false;
+var aPressed = false;
+var sPressed = false;
+
+document.addEventListener("keydown", keyDownHandler, false);
+document.addEventListener("keyup", keyUpHandler, false);
+
+function keyDownHandler(e) {
+    if(e.keyCode == 39) {
+        rightPressed = true;
+    }
+    else if(e.keyCode == 37) {
+        leftPressed = true;
+    }
+    else if(e.keyCode == 32) {
+        spacePressed = true;
+    }
+    else if(e.keyCode == 86) {
+        vPressed = true;
+    }
+    else if(e.keyCode == 66) {
+        bPressed = true;
+    }
+    else if(e.keyCode == 74) {
+        jPressed = true;
+    }
+    else if(e.keyCode == 75) {
+        kPressed = true;
+    }
+    else if(e.keyCode == 65) {
+        aPressed = true;
+    }
+    else if(e.keyCode == 83) {
+        sPressed = true;
+    }
+}
+
+function keyUpHandler(e) {
+    if(e.keyCode == 39) {
+        rightPressed = false;
+    }
+    else if(e.keyCode == 37) {
+        leftPressed = false;
+    }
+    else if(e.keyCode == 32) {
+        spacePressed = false;
+    }
+    else if(e.keyCode == 86) {
+        vPressed = false;
+    }
+    else if(e.keyCode == 66) {
+        bPressed = false;
+    }
+    else if(e.keyCode == 74) {
+        jPressed = false;
+    }
+    else if(e.keyCode == 75) {
+        kPressed = false;
+    }
+    else if(e.keyCode == 65) {
+        aPressed = false;
+    }
+    else if(e.keyCode == 83) {
+        sPressed = false;
+    }
+}
+
+function drawGoal() {
+    ctx.beginPath();
+    ctx.rect(xGoal,yGoal,squareSize+15,squareSize+15);
+    ctx.strokeStyle = "#C70808";
+    ctx.lineWidth = contourWidth+2;
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawSquare() {
+    ctx.beginPath();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x,y,squareSize,squareSize);
+    ctx.fill();
+    ctx.closePath();
+}
+
+function drawContour() {
+    ctx.beginPath();
+    ctx.rect(x,y,squareSize,squareSize);
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = contourWidth;
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawHalfSquare(half,color) {
+    ctx.beginPath();
+    if (half == "left") {
+      var xBegin = x;
+      var yBegin = y;
+    }
+    else if (half == "right") {
+      var xBegin = x + squareSize/2;
+      var yBegin = y;
+    }
+    ctx.rect(xBegin, yBegin, squareSize/2, squareSize);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.closePath();
+}
+
+function restart() {
+  xGoal = getRandomInt(52,702);
+  x = x0;
+  vx = vx0;
+  ax = ax0;
+  x_old = x0;
+  vx_old = vx0;
+  ax_old = ax0;
+}
+
+x_old = x0;
+vx_old = vx0;
+ax_old = ax0;
+
+// function called every 10ms
+function draw() {
+
+  if (spacePressed) {
+    restart();
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawGoal();
+
+  // handle x
+
+  x_old = x;
+  vx_old = vx;
+  ax_old = ax;
+
+  if (kPressed) {
+    ax += dAX;
+  }
+  if (jPressed) {
+    ax -= dAX;
+  }
+
+  vx += ax*frameRate;
+
+  if (aPressed) {
+    vx -= dVX;
+  }
+  if (sPressed) {
+    vx += dVX;
+  }
+
+  x += vx*frameRate;
+
+  if (vPressed) {
+    x -= dX;
+  }
+  if (bPressed) {
+    x += dX;
+  }
+
+  // if the ball hits the sides
+  if (x + vx*frameRate + squareSize + contourWidth> canvas.width) {
+    ax = 0;
+    vx = restitution*vx;
+    x = canvas.width - squareSize - contourWidth;
+  }
+  if (x + vx*frameRate - contourWidth < 0) {
+    ax = 0;
+    vx = restitution*vx;
+    x = contourWidth;
+  }
+
+  drawSquare();
+
+  if (aPressed) {
+    drawHalfSquare("left","#F05408");
+  }
+  if (sPressed) {
+    drawHalfSquare("right","#F05408");
+  }
+  if (vPressed) {
+    drawHalfSquare("left","#038703");
+  }
+  if (bPressed) {
+    drawHalfSquare("right","#038703");
+  }
+  if (jPressed) {
+    drawHalfSquare("left","#d9534f");
+  }
+  if (kPressed) {
+    drawHalfSquare("right","#d9534f");
+  }
+
+  drawContour();
+
+  comp_vx = (x-x_old)/frameRate;
+  comp_ax = (vx-vx_old)/frameRate;
+  comp_jx = (ax-ax_old)/frameRate;
+
+  ctx.font = "bold 15px Arial";
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillText("Position: "+x.toFixed(2).toString()+" cm",10,20);
+  ctx.fillText("Velocity: "+comp_vx.toFixed(2).toString()+" cm/s",10,40);
+  ctx.fillText("Acceleration: "+comp_ax.toFixed(2).toString()+" cm/s\u00b2",10,60);
+  ctx.fillText("Jerk: "+comp_jx.toFixed(2).toString()+" cm/s\u00b3",10,80);
+
+  ctx.fillText("Press [SPACE] to restart",615,20);
+
+  ctx.font = "bold 20px Arial";
+  ctx.fillText("Bring the square home!",280,20);
+
+}
+
+setInterval(draw, frameDelay);
+
+</script>
+
+</body>
+</html>
