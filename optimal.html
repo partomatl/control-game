@@ -4,16 +4,35 @@
     <meta charset="utf-8" />
     <title>Control Game</title>
     <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        color: #334D5C;
+      }
     	canvas {
-        background: #5bc0de;
+        background: #EFC94C;
         display: block;
         margin: auto;
-        margin-top: 40px;}
+        margin-top: 40px;
+        border: 2px solid #E27A3F;}
       .center {
         margin: auto;
-        width: 450px;
-        border: 2px solid #5bc0de;
+        width: 500px;
+        border: 2px solid #DF5A49;
         text-align: center;
+      }
+
+      a:link {
+        color: #DF5A49;
+        background-color: transparent;
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+      a:visited {
+        color: #DF5A49;
+        background-color: transparent;
+        text-decoration: none;
+        font-weight: bold;
       }
     </style>
 </head>
@@ -21,6 +40,8 @@
 
 <canvas id="myCanvas" width="800" height="200"></canvas>
 <br><br>
+<div style="text-align:center;">The ghost square shows you where the square will be in half a second.</div>
+<br>
 <div class="center">
   <table style="margin: auto; padding:5px; border-spacing: 20px 2px;">
     <tr><td><strong>Hold down J</strong></td><td>time-optimal bang-bang jerk control</td></tr>
@@ -29,23 +50,34 @@
 </table>
 </div><br>
 <div style="text-align:center;"><a href="index.html">Click here</a> to go back to the game.</div>
-
+<br><br><br>
+<div style="text-align:center; font-size:14px;">Contact:
+  <script type="text/javascript">
+  //<![CDATA[
+  <!--
+  var x="function f(x){var i,o=\"\",ol=x.length,l=ol;while(x.charCodeAt(l/13)!" +
+  "=48){try{x+=x;l+=l;}catch(e){}}for(i=l-1;i>=0;i--){o+=x.charAt(i);}return o" +
+  ".substr(0,ol);}f(\")86,\\\"NDH[SN610\\\\AQB700\\\\300\\\\010\\\\500\\\\200\\"+
+  "\\F400\\\\r\\\\520\\\\\\\\\\\\C<:3}02;4=w9!t818<410\\\\l120\\\\q/$2-6`430\\" +
+  "\\`WWU230\\\\^YOAMhRAOU771\\\\pvqcs<}ax0grhka020\\\\Y%J320\\\\620\\\\300\\\\"+
+  "700\\\\Mn\\\\UEMr\\\\r\\\\:)2+ {'?* >*(!\\\"(f};o nruter};))++y(^)i(tAedoCr" +
+  "ahc.x(edoCrahCmorf.gnirtS=+o;721=%y;++y)86<i(fi{)++i;l<i;0=i(rof;htgnel.x=l" +
+  ",\\\"\\\"=o,i rav{)y,x(f noitcnuf\")"                                        ;
+  while(x=eval(x));
+  //-->
+  //]]>
+  </script></div>
 <script>
 
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
 
-// var imageObj = new Image();
-//
-// imageObj.onload = function() {
-//   ctx.drawImage(imageObj, 100, 0);
-// };
-// imageObj.src = 'background.jpg';
-
 var frameRate = 1/60; // s
 var frameDelay = frameRate * 1000; // ms
 
 var contourWidth = 2;
+
+var alpha = 0.4;
 
 var squareSize = 30; //cm
 var squareMass = 5; //kg
@@ -65,6 +97,8 @@ function getRandomInt(min, max) {
 var yGoal = y0-12;
 
 var restitution = 0;
+
+var tau = 30;
 
 var dAX = 5; // cm/sˆ2
 var dVX = 5; // cm/s
@@ -146,7 +180,7 @@ function keyUpHandler(e) {
 function drawGoal() {
     ctx.beginPath();
     ctx.rect(xGoal,yGoal,squareSize+15,squareSize+15);
-    ctx.strokeStyle = "#C70808";
+    ctx.strokeStyle = "#DF5A49";
     ctx.lineWidth = contourWidth+2;
     ctx.stroke();
     ctx.closePath();
@@ -154,7 +188,7 @@ function drawGoal() {
 
 function drawSquare() {
     ctx.beginPath();
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = "#45B29D";
     ctx.fillRect(x,y,squareSize,squareSize);
     ctx.fill();
     ctx.closePath();
@@ -163,10 +197,31 @@ function drawSquare() {
 function drawContour() {
     ctx.beginPath();
     ctx.rect(x,y,squareSize,squareSize);
-    ctx.strokeStyle = "#000000";
+    ctx.strokeStyle = "#334D5C";
     ctx.lineWidth = contourWidth;
     ctx.stroke();
     ctx.closePath();
+}
+
+function drawGhostSquare() {
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.fillStyle = "#45B29D";
+    ctx.fillRect(xGhost,y,squareSize,squareSize);
+    ctx.fill();
+    ctx.closePath();
+    ctx.globalAlpha = 1;
+}
+
+function drawGhostContour() {
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.rect(xGhost,y,squareSize,squareSize);
+    ctx.strokeStyle = "#334D5C";
+    ctx.lineWidth = contourWidth;
+    ctx.stroke();
+    ctx.closePath();
+    ctx.globalAlpha = 1;
 }
 
 function drawHalfSquare(half,color) {
@@ -196,6 +251,8 @@ function restart() {
   x_old = x0;
   vx_old = vx0;
   ax_old = ax0;
+
+  xGhost = x0;
 
   backward = false;
   forward = false;
@@ -323,11 +380,11 @@ function draw() {
   if (vPressed) {
     if (forward) {
       if (loops <= Tf_v) {
-        drawHalfSquare("right","#038703");
+        drawHalfSquare("right","#307D6E");
       }
     } else {
       if (loops <= Tf_v) {
-        drawHalfSquare("left","#038703");
+        drawHalfSquare("left","#307D6E");
       }
     }
   }
@@ -335,17 +392,17 @@ function draw() {
   if (aPressed) {
     if (forward) {
       if (loops <= T1_a) {
-        drawHalfSquare("right","#F05408");
+        drawHalfSquare("right","#E27A3F");
       }
       if (loops > T1_a && loops <= Tf_a) {
-        drawHalfSquare("left","#F05408");
+        drawHalfSquare("left","#E27A3F");
       }
     } else {
       if (loops <= T1_a) {
-        drawHalfSquare("left","#F05408");
+        drawHalfSquare("left","#E27A3F");
       }
       if (loops > T1_a && loops <= Tf_a) {
-      drawHalfSquare("right","#F05408");
+      drawHalfSquare("right","#E27A3F");
       }
     }
   }
@@ -353,23 +410,23 @@ function draw() {
   if (jPressed) {
     if (forward) {
       if (loops <= T1_j) {
-        drawHalfSquare("right","#d9534f");
+        drawHalfSquare("right","#DF3E35");
       }
       if (loops > T1_j && loops <= T2_j) {
-        drawHalfSquare("left","#d9534f");
+        drawHalfSquare("left","#DF3E35");
       }
       if (loops > T2_j && loops <= Tf_j) {
-        drawHalfSquare("right","#d9534f");
+        drawHalfSquare("right","#DF3E35");
       }
     } else {
       if (loops <= T1_j) {
-        drawHalfSquare("left","#d9534f");
+        drawHalfSquare("left","#DF3E35");
       }
       if (loops > T1_j && loops <= T2_j) {
-        drawHalfSquare("right","#d9534f");
+        drawHalfSquare("right","#DF3E35");
       }
       if (loops > T2_j && loops <= Tf_j) {
-        drawHalfSquare("left","#d9534f");
+        drawHalfSquare("left","#DF3E35");
       }
     }
   }
@@ -380,8 +437,13 @@ function draw() {
   comp_ax = (vx-vx_old)/frameRate;
   comp_jx = (ax-ax_old)/frameRate;
 
+  xGhost = x + comp_vx*tau*frameRate;
+
+  drawGhostSquare();
+  drawGhostContour();
+
   ctx.font = "bold 15px Arial";
-  ctx.fillStyle = "#FFFFFF";
+  ctx.fillStyle = "#334D5C";
   ctx.fillText("Position: "+x.toFixed(2).toString()+" cm",10,20);
   ctx.fillText("Velocity: "+comp_vx.toFixed(2).toString()+" cm/s",10,40);
   ctx.fillText("Acceleration: "+comp_ax.toFixed(2).toString()+" cm/s\u00b2",10,60);
@@ -390,7 +452,11 @@ function draw() {
   ctx.fillText("Press [SPACE] to restart",615,20);
 
   ctx.font = "bold 20px Arial";
-  ctx.fillText("Watch the controller do its thing :)",240,20);
+  ctx.fillText("Watch the controller do its thing!",240,20);
+
+  ctx.font = "bold 14px Arial";
+  ctx.fillStyle = "#DF5A49";
+  ctx.fillText("HOME",xGoal+1,yGoal-4);
 
 }
 
